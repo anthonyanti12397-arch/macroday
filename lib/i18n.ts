@@ -120,7 +120,7 @@ const zh: Translations = {
     : h < 21 ? '晚上好'
     : '夜深了',
   nav: {
-    home: '主頁', inbody: 'InBody', meals: '餐單', shop: '購物',
+    home: '主頁', inbody: '體測', meals: '餐單', shop: '購物',
   },
   btn: {
     todayMeals: '今日三餐', weekPlan: '週計劃',

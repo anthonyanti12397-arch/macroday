@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Settings, Zap, UtensilsCrossed, CheckCircle } from 'lucide-react'
+import { Settings, Zap, UtensilsCrossed, CheckCircle, ShieldAlert } from 'lucide-react'
 import Logo from '@/components/Logo'
 import SettingsSheet from '@/components/SettingsSheet'
 import { useLang } from '@/contexts/LangContext'
-import { getLatestInBody, getUserProfile, getTodayDailyMeals } from '@/lib/storage'
+import { getLatestInBody, getUserProfile, getTodayDailyMeals, getGuestSession } from '@/lib/storage'
 import type { InBodyRecord, UserProfile, DailyMeals } from '@/lib/types'
 import MacroBar from '@/components/MacroBar'
 import UpgradePrompt from '@/components/UpgradePrompt'
+import { useSession } from 'next-auth/react'
 
 function estimateBMR(r: InBodyRecord): number {
   if (r.bmr) return r.bmr
@@ -41,16 +42,21 @@ function calcTargets(inbody: InBodyRecord, goal: UserProfile['goal']) {
 
 export default function DashboardPage() {
   const { lang, t } = useLang()
+  const { status } = useSession()
   const [inbody, setInbody] = useState<InBodyRecord | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [todayMeals, setTodayMeals] = useState<DailyMeals | null>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [showUpgrade, setShowUpgrade] = useState(false)
+  const [isGuest, setIsGuest] = useState(false)
+  const [guestWarningDismissed, setGuestWarningDismissed] = useState(false)
 
   useEffect(() => {
     setInbody(getLatestInBody())
     setProfile(getUserProfile())
     setTodayMeals(getTodayDailyMeals())
+    // Check if this is a guest session (not signed in via next-auth)
+    setIsGuest(!!getGuestSession())
   }, [])
 
   const targets = inbody && profile ? calcTargets(inbody, profile.goal) : null
@@ -70,6 +76,29 @@ export default function DashboardPage() {
           <Settings size={18} className="text-slate-500" />
         </button>
       </div>
+
+      {/* Guest data warning */}
+      {isGuest && status !== 'authenticated' && !guestWarningDismissed && (
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3">
+          <ShieldAlert size={16} className="text-amber-500 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-amber-700 mb-0.5">
+              {lang === 'zh' ? '訪客模式：數據僅存於此裝置' : 'Guest mode: data stored on this device only'}
+            </p>
+            <p className="text-[11px] text-amber-600">
+              {lang === 'zh'
+                ? '登入帳號以在所有裝置同步並保護你的數據'
+                : 'Sign in to sync and protect your data across devices'}
+            </p>
+          </div>
+          <button
+            onClick={() => setGuestWarningDismissed(true)}
+            className="text-amber-400 hover:text-amber-600 text-sm shrink-0 font-bold"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* No InBody data */}
       {!inbody && (

@@ -4,7 +4,7 @@ import './globals.css'
 import { APP_NAME } from '@/lib/constants'
 import BottomNav from '@/components/BottomNav'
 import AuthGate from '@/components/AuthGate'
-import { LangProvider } from '@/contexts/LangContext'
+import Providers from '@/components/Providers'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -32,14 +32,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className={`${inter.className} min-h-screen`}>
-        <LangProvider>
+        <Providers>
           <AuthGate>
             <main className="pb-20 max-w-2xl mx-auto px-4">
               {children}
             </main>
             <BottomNav />
           </AuthGate>
-        </LangProvider>
+        </Providers>
       </body>
     </html>
   )

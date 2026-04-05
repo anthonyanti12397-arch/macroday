@@ -9,6 +9,8 @@ const KEYS = {
   USAGE: 'fuelweek_usage',
   SHOPPING_CHECKED: 'fuelweek_shopping_checked',
   DAILY_MEALS: 'fuelweek_daily_meals',
+  EATEN: 'macroday_eaten',
+  FAVORITES: 'macroday_favorites',
   SESSION: 'macroday_session',
   LANG: 'macroday_lang',
 } as const
@@ -223,6 +225,55 @@ export function saveLang(lang: 'en' | 'zh'): void {
   } catch {
     // SSR or storage unavailable
   }
+}
+
+// ── Eaten Meals ───────────────────────────────────────────────────────────────
+
+export function getEatenMeals(): string[] {
+  try {
+    const raw = localStorage.getItem(KEYS.EATEN)
+    if (!raw) return []
+    const data = JSON.parse(raw) as { date: string; eaten: string[] }
+    if (data.date !== todayStr()) return []
+    return data.eaten
+  } catch { return [] }
+}
+
+export function toggleMealEaten(mealType: string): string[] {
+  try {
+    const current = getEatenMeals()
+    const updated = current.includes(mealType)
+      ? current.filter((m) => m !== mealType)
+      : [...current, mealType]
+    localStorage.setItem(KEYS.EATEN, JSON.stringify({ date: todayStr(), eaten: updated }))
+    return updated
+  } catch { return [] }
+}
+
+// ── Favorites ─────────────────────────────────────────────────────────────────
+
+import type { Meal } from './types'
+
+export function getFavorites(): Meal[] {
+  try {
+    const raw = localStorage.getItem(KEYS.FAVORITES)
+    if (!raw) return []
+    return JSON.parse(raw) as Meal[]
+  } catch { return [] }
+}
+
+export function toggleFavorite(meal: Meal): boolean {
+  try {
+    const favs = getFavorites()
+    const exists = favs.some((f) => f.name === meal.name)
+    const updated = exists ? favs.filter((f) => f.name !== meal.name) : [...favs, meal]
+    localStorage.setItem(KEYS.FAVORITES, JSON.stringify(updated))
+    return !exists
+  } catch { return false }
+}
+
+export function isFavorite(mealName: string): boolean {
+  return getFavorites().some((f) => f.name === mealName)
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

@@ -264,12 +264,14 @@ export default function MealPlanPage() {
 
               {(['breakfast', 'lunch', 'dinner'] as const).map((type) => {
                 const meal: Meal = { ...dailyMeals[type] }
+                const mealTypeLabel = t.meal[type]
                 return (
                   <MealCard
                     key={type}
                     meal={meal}
-                    mealType={type.charAt(0).toUpperCase() + type.slice(1)}
+                    mealType={mealTypeLabel}
                     imageLoading={imagesLoading[type] ?? false}
+                    mealKey={type}
                   />
                 )
               })}

@@ -3,9 +3,10 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import {
-  X, LogOut, Globe, Activity, Zap, Bell, Palette,
-  ChevronRight, Crown, User, Check,
+  X, LogOut, Globe, Activity, Bell, Palette,
+  ChevronRight, Crown, Check,
 } from 'lucide-react'
+import { useSession, signOut } from 'next-auth/react'
 import { clearSession, getUserProfile, getGuestSession } from '@/lib/storage'
 import { useLang } from '@/contexts/LangContext'
 import UpgradePrompt from './UpgradePrompt'
@@ -20,19 +21,26 @@ export default function SettingsSheet({ onClose, onLogout }: SettingsSheetProps)
   const { lang, setLang, t } = useLang()
   const s = t.settings
   const profile = getUserProfile()
-  const session = getGuestSession()
+  const guestSession = getGuestSession()
+  const { data: authSession } = useSession()
   const [showUpgrade, setShowUpgrade] = useState(false)
   const [logoutConfirm, setLogoutConfirm] = useState(false)
+
+  const isRealUser = !!authSession?.user
+  const displayName = authSession?.user?.name ?? authSession?.user?.email ?? guestSession?.id ?? 'Guest'
+  const avatarLetter = (authSession?.user?.name ?? authSession?.user?.email ?? guestSession?.id ?? 'G').charAt(0).toUpperCase()
+  const isPro = profile?.isPro ?? false
+  const goalLabel = profile?.goal ? s.goalLabels[profile.goal] : '—'
 
   function handleLogout() {
     if (!logoutConfirm) { setLogoutConfirm(true); return }
     clearSession()
-    onLogout()
+    if (isRealUser) {
+      signOut({ callbackUrl: '/' })
+    } else {
+      onLogout()
+    }
   }
-
-  const avatarLetter = session?.id?.slice(6, 7) ?? 'G'
-  const isPro = profile?.isPro ?? false
-  const goalLabel = profile?.goal ? s.goalLabels[profile.goal] : '—'
 
   return (
     <>
@@ -72,15 +80,17 @@ export default function SettingsSheet({ onClose, onLogout }: SettingsSheetProps)
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <p className="text-white font-bold text-sm truncate">{session?.id ?? 'Guest'}</p>
-                    <span className="text-[10px] font-bold bg-white/20 text-white px-2 py-0.5 rounded-full shrink-0">
-                      {s.guestBadge}
-                    </span>
+                    <p className="text-white font-bold text-sm truncate">{displayName}</p>
+                    {!isRealUser && (
+                      <span className="text-[10px] font-bold bg-white/20 text-white px-2 py-0.5 rounded-full shrink-0">
+                        {s.guestBadge}
+                      </span>
+                    )}
                   </div>
                   <p className="text-white/70 text-xs">
                     {isPro ? (
                       <span className="flex items-center gap-1"><Crown size={11} className="text-yellow-300" /> Pro</span>
-                    ) : 'Free plan'}
+                    ) : (isRealUser ? authSession.user?.email ?? '' : 'Free plan')}
                   </p>
                 </div>
                 {!isPro && (
