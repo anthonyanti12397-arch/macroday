@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Settings, Zap, UtensilsCrossed } from 'lucide-react'
+import { Settings, Zap, UtensilsCrossed, CheckCircle } from 'lucide-react'
 import Logo from '@/components/Logo'
 import SettingsSheet from '@/components/SettingsSheet'
 import { useLang } from '@/contexts/LangContext'
-import { getLatestInBody, getUserProfile } from '@/lib/storage'
-import type { InBodyRecord, UserProfile } from '@/lib/types'
+import { getLatestInBody, getUserProfile, getTodayDailyMeals } from '@/lib/storage'
+import type { InBodyRecord, UserProfile, DailyMeals } from '@/lib/types'
 import MacroBar from '@/components/MacroBar'
 import UpgradePrompt from '@/components/UpgradePrompt'
 
@@ -43,12 +43,14 @@ export default function DashboardPage() {
   const { lang, t } = useLang()
   const [inbody, setInbody] = useState<InBodyRecord | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [todayMeals, setTodayMeals] = useState<DailyMeals | null>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [showUpgrade, setShowUpgrade] = useState(false)
 
   useEffect(() => {
     setInbody(getLatestInBody())
     setProfile(getUserProfile())
+    setTodayMeals(getTodayDailyMeals())
   }, [])
 
   const targets = inbody && profile ? calcTargets(inbody, profile.goal) : null
@@ -140,18 +142,41 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* CTA to meal plan */}
-          <Link
-            href="/meal-plan"
-            className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-bold text-white"
-            style={{
-              background: 'linear-gradient(135deg, #0F9E75 0%, #0BD68A 100%)',
-              boxShadow: '0 4px 16px rgba(15,158,117,0.3)',
-            }}
-          >
-            <UtensilsCrossed size={18} />
-            <span>{t.dashboard.todayMeals}</span>
-            <span className="ml-auto text-white/70">›</span>
+          {/* Today's meals status card */}
+          <Link href="/meal-plan" className="block">
+            {todayMeals ? (
+              // Meals generated — show quick summary
+              <div className="card-lg p-4 flex items-center gap-4 hover:border-[#0F9E75] transition-colors">
+                <div className="w-11 h-11 rounded-2xl bg-[#E8F5F0] flex items-center justify-center shrink-0">
+                  <CheckCircle size={20} className="text-[#0F9E75]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-[#0F9E75] uppercase tracking-wide mb-0.5">
+                    {lang === 'zh' ? '今日三餐 ✓' : "Today's Meals ✓"}
+                  </p>
+                  <div className="flex gap-3 flex-wrap">
+                    {(['breakfast', 'lunch', 'dinner'] as const).map((type) => (
+                      <span key={type} className="text-xs font-semibold text-slate-600 truncate">
+                        {todayMeals[type].name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <span className="text-slate-300 text-lg shrink-0">›</span>
+              </div>
+            ) : (
+              // No meals yet — prominent CTA
+              <div
+                className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-bold text-white"
+                style={{ background: 'linear-gradient(135deg, #0F9E75 0%, #0BD68A 100%)', boxShadow: '0 4px 16px rgba(15,158,117,0.3)' }}
+              >
+                <UtensilsCrossed size={18} />
+                <div>
+                  <p>{lang === 'zh' ? '今天還未生成三餐' : "Today's meals not yet generated"}</p>
+                  <p className="text-white/60 text-xs font-medium mt-0.5">{lang === 'zh' ? '點擊立即生成 →' : 'Tap to generate →'}</p>
+                </div>
+              </div>
+            )}
           </Link>
         </>
       )}

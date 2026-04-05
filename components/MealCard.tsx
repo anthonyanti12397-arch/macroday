@@ -16,6 +16,7 @@ export default function MealCard({ meal, mealType, imageLoading = false }: MealC
   const { t } = useLang()
   const m = t.meal
   const [expanded, setExpanded] = useState(false)
+  const [imgVisible, setImgVisible] = useState(false)
   const hasRecipe = !meal.isTakeout && (meal.ingredients.length > 0 || meal.steps.length > 0)
   const hasTakeoutInfo = meal.isTakeout && meal.whereToGet
 
@@ -30,7 +31,14 @@ export default function MealCard({ meal, mealType, imageLoading = false }: MealC
           </div>
         )}
         {meal.imageUrl && (
-          <Image src={meal.imageUrl} alt={meal.name} fill className="object-cover" unoptimized />
+          <Image
+            src={meal.imageUrl}
+            alt={meal.name}
+            fill
+            className={`object-cover transition-opacity duration-700 ${imgVisible ? 'opacity-100' : 'opacity-0'}`}
+            unoptimized
+            onLoad={() => setImgVisible(true)}
+          />
         )}
         {!meal.imageUrl && !imageLoading && (
           <div className="absolute inset-0 bg-gradient-to-br from-[#E8F5F0] to-[#F0FDF9] flex items-center justify-center">

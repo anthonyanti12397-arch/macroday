@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { getInBodyHistory, getLatestInBody, getUserProfile } from '@/lib/storage'
 import type { InBodyRecord, UserProfile } from '@/lib/types'
 import InBodyForm from '@/components/InBodyForm'
@@ -10,14 +11,17 @@ import { useLang } from '@/contexts/LangContext'
 import { Activity, CheckCircle, TrendingUp, Lock } from 'lucide-react'
 
 export default function InBodyPage() {
-  const { t } = useLang()
+  const { lang, t } = useLang()
   const i = t.inbody
+  const router = useRouter()
   const [history, setHistory] = useState<InBodyRecord[]>([])
   const [latest, setLatest] = useState<InBodyRecord | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [saved, setSaved] = useState(false)
   const [showChart, setShowChart] = useState(false)
   const [showUpgrade, setShowUpgrade] = useState(false)
+  // Track if this is the first time saving (no data before)
+  const isFirstSave = useRef<boolean>(false)
 
   function load() {
     setHistory(getInBodyHistory())
@@ -25,12 +29,22 @@ export default function InBodyPage() {
     setProfile(getUserProfile())
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    const noDataYet = !getLatestInBody()
+    isFirstSave.current = noDataYet
+    load()
+  }, [])
 
   function handleSaved() {
     load()
     setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
+    if (isFirstSave.current) {
+      isFirstSave.current = false
+      // Short delay so user sees the "Saved!" toast, then redirect to Meal Plan
+      setTimeout(() => router.push('/meal-plan'), 1400)
+    } else {
+      setTimeout(() => setSaved(false), 2500)
+    }
   }
 
   return (
